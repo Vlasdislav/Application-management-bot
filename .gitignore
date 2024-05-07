@@ -1,0 +1,33 @@
+# Игнорировать временные файлы и каталоги
+.idea/
+cmake-build-debug/
+cmake-build-release/
+
+# Игнорировать файлы сборки
+CMakeFiles/
+CMakeScripts/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+Makefile
+
+# Игнорировать файлы компилятора
+*.o
+*.obj
+*.exe
+*.out
+main
+
+# Игнорировать файлы с настройками пользователя
+*.iml
+*.ipr
+*.iws
+*.ids
+*.orig
+*.log
+*.tmp
+*.bak
+
+# Игнорировать файлы сборки Visual Studio
+.vs/
+.vscode/

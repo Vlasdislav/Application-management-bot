@@ -1,0 +1,8 @@
+#!/bin/bash
+
+rm -r CMakeFiles
+mkdir CMakeFiles
+cd CMakeFiles
+cmake ../
+make
+cd ../
