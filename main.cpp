@@ -27,6 +27,7 @@ void createDB(SQLite::Database& db) {
     }
 }
 
+// DBG
 void showBD(SQLite::Database& db) {
     try {
         {
@@ -80,25 +81,7 @@ int main() {
     bot.getEvents().onCommand("view", [&bot, &db, &conversations](TgBot::Message::Ptr message) {
         conversations[message->chat->id].currentCommand = "view";
         if (!conversations[message->chat->id].employeeId.empty()) {
-            bot.getApi().sendMessage(message->chat->id, "Ваши заявки:");
-            try {
-                SQLite::Statement select(db, "SELECT * FROM requests WHERE employee_id = ?");
-                select.bind(1, conversations[message->chat->id].employeeId);
-                std::string answer;
-                while (select.executeStep()) {
-                    int id = select.getColumn(0);
-                    std::string request = select.getColumn(1);
-                    std::string create_time = select.getColumn(2);
-                    std::string employee_id = select.getColumn(3);
-                    std::string work_time = select.getColumn(4);
-                    std::string results = select.getColumn(5);
-                    std::string end_time = select.getColumn(6);
-                    answer += std::to_string(id) + " " + request + " " + create_time + " " + work_time + " " + results + " " + end_time + "\n\n";
-                }
-                bot.getApi().sendMessage(message->chat->id, answer);
-            } catch (std::exception const& e) {
-                std::cerr << "SQLite error: " << e.what() << std::endl;
-            }
+            bot.getApi().sendMessage(message->chat->id, "Введите табельный номер:");
         } else {
             bot.getApi().sendMessage(message->chat->id, "Не удалось посмотреть заявки. Для этого необходимо зарегистрироваться в системе.");
         }
@@ -129,6 +112,26 @@ int main() {
     });
 
     bot.getEvents().onNonCommandMessage([&bot, &conversations, &db](TgBot::Message::Ptr message) {
+        if (conversations[message->chat->id].currentCommand == "view") {
+            try {
+                SQLite::Statement select(db, "SELECT * FROM requests WHERE employee_id = ?");
+                select.bind(1, message->text);
+                std::string answer;
+                while (select.executeStep()) {
+                    int id = select.getColumn(0);
+                    std::string request = select.getColumn(1);
+                    std::string create_time = select.getColumn(2);
+                    std::string employee_id = select.getColumn(3);
+                    std::string work_time = select.getColumn(4);
+                    std::string results = select.getColumn(5);
+                    std::string end_time = select.getColumn(6);
+                    answer += std::to_string(id) + " " + request + " " + create_time + " " + work_time + " " + results + " " + end_time + "\n\n";
+                }
+                bot.getApi().sendMessage(message->chat->id, answer);
+            } catch (std::exception const& e) {
+                std::cerr << "SQLite error: " << e.what() << std::endl;
+            }
+        }
         if (conversations[message->chat->id].currentCommand == "add") {
             if (!conversations[message->chat->id].employeeId.empty()) {
                 std::string requestText = message->text;
