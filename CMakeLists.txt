@@ -10,7 +10,8 @@ find_path(TGBOT_INCLUDE_DIR TgBot/TgBot.h HINTS /usr/local/include)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/SQLiteCpp)
 
-add_executable(main main.cpp)
+file(GLOB_RECURSE SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/*")
+add_executable(main main.cpp ${SRCS})
 
 target_include_directories(main PRIVATE ${TGBOT_INCLUDE_DIR})
 
