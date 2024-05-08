@@ -10,7 +10,7 @@ void ManagmentBot::eventStart(ConversationMap& conversations,
     const int64_t chatId = message->chat->id;
     conversations[chatId].currentCommand = "start";
     try {
-        SQLite::Statement query(db, "SELECT service_number FROM employees WHERE chat_id = ?");
+        SQLite::Statement query(db, "SELECT * FROM employees WHERE chat_id = ?");
         query.bind(1, chatId);
         if (query.executeStep()) {
             conversations[chatId].serviceNumber = query.getColumn("service_number").getString();
@@ -64,7 +64,14 @@ void ManagmentBot::eventAdd(ConversationMap& conversations,
 
 void ManagmentBot::eventWork(ConversationMap& conversations,
                             const TgBot::Message::Ptr& message) {
-    conversations[message->chat->id].currentCommand = "work";
+    const int64_t chatId = message->chat->id;
+    if (!conversations[chatId].serviceNumber.empty()) {
+        conversations[chatId].currentCommand = "work";
+        bot.getApi().sendMessage(chatId, "Введите id заявки, за которую хотите приступить:");
+    } else {
+        conversations[chatId].currentCommand = "start";
+        bot.getApi().sendMessage(message->chat->id, "Не удалось выбрать заявку. Для этого необходимо зарегистрироваться в системе.");
+    }
 }
 
 void ManagmentBot::activityStart(ConversationMap& conversations,
@@ -172,11 +179,23 @@ void ManagmentBot::activityAdd(ConversationMap& conversations,
     insert.bind(2, employeeCreatedId);
     insert.exec();
     bot.getApi().sendMessage(chatId, "Новая заявка успешно создана!");
-    database::showBD(db);
     conversations[chatId].currentCommand = "start";
 }
 
 void ManagmentBot::activityWork(ConversationMap& conversations,
                             const TgBot::Message::Ptr& message) {
-    // TODO
+    const int64_t chatId = message->chat->id;
+    std::string requestId = message->text;
+    SQLite::Statement select(db, "SELECT * FROM requests WHERE id = ? AND employee_worker_id IS NULL");
+    select.bind(1, requestId);
+    if (select.executeStep()) {
+        SQLite::Statement update(db, "UPDATE requests SET work_time = datetime('now'), employee_worker_id = ? WHERE id = ?");
+        update.bind(1, conversations[chatId].id);
+        update.bind(2, requestId);
+        update.exec();
+        bot.getApi().sendMessage(chatId, "Заявка успешно взята в работу!");
+    } else {
+        bot.getApi().sendMessage(chatId, "Заявка уже в работе!");
+    }
+    conversations[chatId].currentCommand = "start";
 }

@@ -34,34 +34,4 @@ namespace database {
             std::cerr << "SQLite error: " << e.what() << std::endl;
         }
     }
-
-    // DBG
-    inline void showBD(SQLite::Database& db) {
-        try {
-            {
-                SQLite::Statement select(db, "SELECT * FROM employees");
-                while (select.executeStep()) {
-                    int id = select.getColumn(0);
-                    std::string name = select.getColumn(1);
-                    std::string employee_id = select.getColumn(2);
-                    std::cout << "ID: " << id << ", Name: " << name << ", " << "Employee_id: " << employee_id << std::endl;
-                }
-            }
-            {
-                SQLite::Statement select(db, "SELECT * FROM requests");
-                while (select.executeStep()) {
-                    int id = select.getColumn(0);
-                    std::string request = select.getColumn(1);
-                    std::string create_time = select.getColumn(2);
-                    std::string employee_id = select.getColumn(3);
-                    std::string work_time = select.getColumn(4);
-                    std::string results = select.getColumn(5);
-                    std::string end_time = select.getColumn(6);
-                    std::cout << id << ' ' << request << ' ' << create_time << ' ' << employee_id << ' ' << work_time << ' ' << results << ' ' << end_time << std::endl;
-                }
-            }
-        } catch (std::exception const& e) {
-            std::cerr << "SQLite error: " << e.what() << std::endl;
-        }
-    }
 }

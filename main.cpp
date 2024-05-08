@@ -45,6 +45,9 @@ int main() {
         if (conversations[message->chat->id].currentCommand == "add") {
             mBot.activityAdd(conversations, message);
         }
+        if (conversations[message->chat->id].currentCommand == "work") {
+            mBot.activityWork(conversations, message);
+        }
     });
 
     try {
