@@ -20,6 +20,11 @@ int main() {
         mBot.eventView(conversations, message);
     });
 
+    // Обработчик команды /view_all для просмотра всех заявок
+    mBot.bot.getEvents().onCommand("view_all", [&mBot, &conversations](TgBot::Message::Ptr message) {
+        mBot.eventViewAll(conversations, message);
+    });
+
     // Обработчик команды /add для добавления новой заявки
     mBot.bot.getEvents().onCommand("add", [&mBot, &conversations](TgBot::Message::Ptr message) {
         mBot.eventAdd(conversations, message);
@@ -28,11 +33,6 @@ int main() {
     // Обработчик команды /work для взятия в работу заявки
     mBot.bot.getEvents().onCommand("work", [&mBot, &conversations](TgBot::Message::Ptr message) {
         mBot.eventWork(conversations, message);
-    });
- 
-    // Обработчик команды /register для начала процесса регистрации
-    mBot.bot.getEvents().onCommand("register", [&mBot, &conversations](TgBot::Message::Ptr message) {
-        mBot.eventRegister(conversations, message);
     });
 
     mBot.bot.getEvents().onNonCommandMessage([&mBot, &conversations](TgBot::Message::Ptr message) {

@@ -22,12 +22,13 @@ namespace database {
             db.exec("CREATE TABLE IF NOT EXISTS requests ("
                     "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                     "request TEXT,"
+                    "employee_created_id INTEGER,"
                     "create_time DATETIME DEFAULT CURRENT_TIMESTAMP,"
-                    "employee_id INTEGER,"
+                    "employee_worker_id INTEGER,"
                     "work_time DATETIME,"
                     "results TEXT,"
                     "end_time DATETIME,"
-                    "FOREIGN KEY (employee_id) REFERENCES employees(id)"
+                    "FOREIGN KEY (employee_created_id) REFERENCES employees(id)"
                     ")");
         } catch (std::exception const& e) {
             std::cerr << "SQLite error: " << e.what() << std::endl;

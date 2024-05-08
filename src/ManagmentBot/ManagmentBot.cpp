@@ -39,6 +39,17 @@ void ManagmentBot::eventView(ConversationMap& conversations,
     }
 }
 
+void ManagmentBot::eventViewAll(ConversationMap& conversations,
+                            const TgBot::Message::Ptr& message) {
+    const int64_t chatId = message->chat->id;
+    if (!conversations[chatId].serviceNumber.empty()) {
+        activityViewAll(conversations, message);
+    } else {
+        bot.getApi().sendMessage(chatId, "Не удалось посмотреть заявки. Для этого необходимо зарегистрироваться в системе.");
+    }
+    conversations[chatId].currentCommand = "start";
+}
+
 void ManagmentBot::eventAdd(ConversationMap& conversations,
                             const TgBot::Message::Ptr& message) {
     const int64_t chatId = message->chat->id;
@@ -54,13 +65,6 @@ void ManagmentBot::eventAdd(ConversationMap& conversations,
 void ManagmentBot::eventWork(ConversationMap& conversations,
                             const TgBot::Message::Ptr& message) {
     conversations[message->chat->id].currentCommand = "work";
-}
-
-void ManagmentBot::eventRegister(ConversationMap& conversations,
-                            const TgBot::Message::Ptr& message) {
-    conversations[message->chat->id].currentCommand = "register";
-    bot.getApi().sendMessage(message->chat->id, "Введите ваш табельный номер:");
-    // conversations[message->chat->id].employeeId.clear();
 }
 
 void ManagmentBot::activityStart(ConversationMap& conversations,
@@ -96,32 +100,33 @@ void ManagmentBot::activityStart(ConversationMap& conversations,
 void ManagmentBot::activityView(ConversationMap& conversations,
                             const TgBot::Message::Ptr& message) {
     try {
-        int64_t employee_id = -1;
+        int64_t employee_created_id = -1;
         {
             SQLite::Statement select(db, "SELECT * FROM employees WHERE service_number = ?");
             select.bind(1, message->text);
             if (select.executeStep()) {
-                employee_id = select.getColumn(0).getInt64();
+                employee_created_id = select.getColumn(0).getInt64();
             }
         }
         {
-            SQLite::Statement select(db, "SELECT * FROM requests WHERE employee_id = ?");
-            select.bind(1, employee_id);
+            SQLite::Statement select(db, "SELECT * FROM requests WHERE employee_created_id = ?");
+            select.bind(1, employee_created_id);
             std::vector<std::vector<std::string>> table = {
-                { "id", "Текст заявки", "Создана", "Взята в работу",
+                { "id", "Текст заявки", "Создана работником", "Создана в", "Взята в работу",
                     "Начало работы", "Результаты", "Конец работы" }
             };
             while (select.executeStep()) {
                 std::string id = select.getColumn(0).getString();
                 std::string request = select.getColumn(1).getString();
-                std::string create_time = select.getColumn(2).getString();
-                std::string employee_id = select.getColumn(3).getString();
-                std::string work_time = select.getColumn(4).getString();
-                std::string results = select.getColumn(5).getString();
-                std::string end_time = select.getColumn(6).getString();
+                std::string employee_created_id = select.getColumn(2).getString();
+                std::string create_time = select.getColumn(3).getString();
+                std::string employee_worker_id = select.getColumn(4).getString();
+                std::string work_time = select.getColumn(5).getString();
+                std::string results = select.getColumn(6).getString();
+                std::string end_time = select.getColumn(7).getString();
                 table.emplace_back(std::vector<std::string>{
-                    id, request, create_time, employee_id,
-                    work_time, results, end_time
+                    id, request, employee_created_id, create_time,
+                    employee_worker_id, work_time, results, end_time
                 });
             }
             std::string answer = table::generate(table);
@@ -132,14 +137,39 @@ void ManagmentBot::activityView(ConversationMap& conversations,
     }
 }
 
+void ManagmentBot::activityViewAll(ConversationMap& conversations,
+                            const TgBot::Message::Ptr& message) {
+    SQLite::Statement select(db, "SELECT * FROM requests");
+    std::vector<std::vector<std::string>> table = {
+        { "id", "Текст заявки", "Создана работником", "Создана в", "Взята в работу",
+            "Начало работы", "Результаты", "Конец работы" }
+    };
+    while (select.executeStep()) {
+        std::string id = select.getColumn(0).getString();
+        std::string request = select.getColumn(1).getString();
+        std::string employee_created_id = select.getColumn(2).getString();
+        std::string create_time = select.getColumn(3).getString();
+        std::string employee_worker_id = select.getColumn(4).getString();
+        std::string work_time = select.getColumn(5).getString();
+        std::string results = select.getColumn(6).getString();
+        std::string end_time = select.getColumn(7).getString();
+        table.emplace_back(std::vector<std::string>{
+            id, request, employee_created_id, create_time,
+            employee_worker_id, work_time, results, end_time
+        });
+    }
+    std::string answer = table::generate(table);
+    bot.getApi().sendMessage(message->chat->id, answer);
+}
+
 void ManagmentBot::activityAdd(ConversationMap& conversations,
                             const TgBot::Message::Ptr& message) {
     const int64_t chatId = message->chat->id;
     std::string requestText = message->text;
-    int64_t employeeId = conversations[chatId].id;
-    SQLite::Statement insert(db, "INSERT INTO requests (request, employee_id) VALUES (?, ?)");
+    int64_t employeeCreatedId = conversations[chatId].id;
+    SQLite::Statement insert(db, "INSERT INTO requests (request, employee_created_id) VALUES (?, ?)");
     insert.bind(1, requestText);
-    insert.bind(2, employeeId);
+    insert.bind(2, employeeCreatedId);
     insert.exec();
     bot.getApi().sendMessage(chatId, "Новая заявка успешно создана!");
     database::showBD(db);
@@ -149,37 +179,4 @@ void ManagmentBot::activityAdd(ConversationMap& conversations,
 void ManagmentBot::activityWork(ConversationMap& conversations,
                             const TgBot::Message::Ptr& message) {
     // TODO
-}
-
-void ManagmentBot::activityRegister(ConversationMap& conversations,
-                            const TgBot::Message::Ptr& message) {
-    if (!conversations[message->chat->id].serviceNumber.empty()) {
-        if (message->text != "") {
-            std::string employeeId = message->text;
-            SQLite::Statement query(db, "SELECT COUNT(*) FROM employees WHERE employee_id = ?");
-            query.bind(1, employeeId);
-            if (query.executeStep()) {
-                int count = query.getColumn(0);
-                if (count > 0) {
-                    bot.getApi().sendMessage(message->chat->id, "Вы уже зарегистрированы.");
-                } else {
-                    bot.getApi().sendMessage(message->chat->id, "Введите ваше имя:");
-                    // conversations[message->chat->id].employeeId = employeeId;
-                }
-            } else {
-                bot.getApi().sendMessage(message->chat->id, "Произошла ошибка. Пожалуйста, попробуйте позже.");
-            }
-        }
-    } else {
-        std::string name = message->text;
-        // std::string employeeId = conversations[message->chat->id].employeeId;
-        int chat_id = message->chat->id;
-        SQLite::Statement insert(db, "INSERT INTO employees (name, employee_id, chat_id) VALUES (?, ?, ?)");
-        insert.bind(1, name);
-        // insert.bind(2, employeeId);
-        insert.bind(3, chat_id);
-        insert.exec();
-        bot.getApi().sendMessage(message->chat->id, "Регистрация завершена. Добро пожаловать!");
-        database::showBD(db);
-    }
 }

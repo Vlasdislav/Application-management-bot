@@ -17,13 +17,13 @@ public:
     void eventView(ConversationMap&,
                     const TgBot::Message::Ptr&);
 
+    void eventViewAll(ConversationMap&,
+                    const TgBot::Message::Ptr&);
+
     void eventAdd(ConversationMap&,
                     const TgBot::Message::Ptr&);
 
     void eventWork(ConversationMap&,
-                const TgBot::Message::Ptr&);
-
-    void eventRegister(ConversationMap&,
                 const TgBot::Message::Ptr&);
 
     void activityStart(ConversationMap&,
@@ -31,14 +31,14 @@ public:
 
     void activityView(ConversationMap&,
                     const TgBot::Message::Ptr&);
+    
+    void activityViewAll(ConversationMap&,
+                    const TgBot::Message::Ptr&);
 
     void activityAdd(ConversationMap&,
                     const TgBot::Message::Ptr&);
 
     void activityWork(ConversationMap&,
-                const TgBot::Message::Ptr&);
-
-    void activityRegister(ConversationMap&,
                 const TgBot::Message::Ptr&);
                 
 public:
