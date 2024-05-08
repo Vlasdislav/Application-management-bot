@@ -67,7 +67,7 @@ void ManagmentBot::eventWork(ConversationMap& conversations,
     const int64_t chatId = message->chat->id;
     if (!conversations[chatId].serviceNumber.empty()) {
         conversations[chatId].currentCommand = "work";
-        bot.getApi().sendMessage(chatId, "Введите id заявки, за которую хотите приступить:");
+        bot.getApi().sendMessage(chatId, "Введите `id` заявки, за которую хотите приступить:");
     } else {
         conversations[chatId].currentCommand = "start";
         bot.getApi().sendMessage(message->chat->id, "Не удалось выбрать заявку. Для этого необходимо зарегистрироваться в системе.");
@@ -193,9 +193,19 @@ void ManagmentBot::activityWork(ConversationMap& conversations,
         update.bind(1, conversations[chatId].id);
         update.bind(2, requestId);
         update.exec();
-        bot.getApi().sendMessage(chatId, "Заявка успешно взята в работу!");
+        int64_t employee_created_id = select.getColumn(2).getInt64();
+        SQLite::Statement selectEmp(db, "SELECT * FROM employees WHERE id = ?");
+        selectEmp.bind(1, employee_created_id);
+        if (selectEmp.executeStep()) {
+            int64_t chatIdEmp = selectEmp.getColumn(3).getInt64();
+            bot.getApi().sendMessage(chatId, "Заявка успешно взята в работу!");
+            bot.getApi().sendMessage(chatIdEmp, "Заявка `id`: " + requestId + " взята в работу `сотрудником`: " + std::to_string(conversations[chatId].id));
+        } else {
+            std::cerr << "Ошибка: работник не найден." << std::endl;
+        }
     } else {
         bot.getApi().sendMessage(chatId, "Заявка уже в работе!");
     }
     conversations[chatId].currentCommand = "start";
 }
+
